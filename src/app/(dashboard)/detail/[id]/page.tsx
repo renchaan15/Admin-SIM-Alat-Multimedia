@@ -27,12 +27,12 @@ export default function DetailTransaksiPage() {
   const [loading, setLoading] = useState(true);
 
   // ================= FIREBASE LISTENER =================
-useEffect(() => {
+  useEffect(() => {
     const fetchDetail = async () => {
       if (!params?.id) return;
       
-      // FIX VERCEL BUILD: Pastikan param id dibaca sebagai string murni
-      const documentId = Array.isArray(params.id) ? params.id[0] : params.id;
+      // FIX VERCEL BUILD: Menjamin params.id dibaca murni sebagai teks tunggal
+      const documentId = typeof params.id === "string" ? params.id : params.id[0];
       
       try {
         const docRef = doc(db, "transactions", documentId);
