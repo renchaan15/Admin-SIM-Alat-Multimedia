@@ -27,12 +27,15 @@ export default function DetailTransaksiPage() {
   const [loading, setLoading] = useState(true);
 
   // ================= FIREBASE LISTENER =================
-  useEffect(() => {
+useEffect(() => {
     const fetchDetail = async () => {
       if (!params?.id) return;
       
+      // FIX VERCEL BUILD: Pastikan param id dibaca sebagai string murni
+      const documentId = Array.isArray(params.id) ? params.id[0] : params.id;
+      
       try {
-        const docRef = doc(db, "transactions", params.id);
+        const docRef = doc(db, "transactions", documentId);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -48,7 +51,7 @@ export default function DetailTransaksiPage() {
     };
 
     fetchDetail();
-  }, [params.id]);
+  }, [params]);
 
   const formatDate = (dateObj) => {
     if (!dateObj) return "-";
