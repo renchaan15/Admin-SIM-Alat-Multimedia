@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-primary: #10B981;
+  --color-primary-dark: #059669;
+  --color-primary-light: #D1FAE5;
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-textPrimary: #1E293B;
+  --color-textSecondary: #64748B;
+  --color-danger: #EF4444;
+  --color-dangerLight: #FEE2E2;
+  --color-amberAccent: #F59E0B;
+  
+  --font-sans: var(--font-dm-sans, ui-sans-serif, system-ui, sans-serif);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-textPrimary);
+}
+
+/* ==================================================== */
+/* PENGATURAN CETAK PDF (PRINT MEDIA QUERY)             */
+/* ==================================================== */
+@media print {
+  /* Sembunyikan Sidebar, Header Navigasi, dan Tombol-tombol */
+  aside, 
+  header, 
+  button {
+    display: none !important;
+  }
+
+  /* Hilangkan margin kiri yang didorong oleh sidebar */
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Pastikan background cetak berwarna putih bersih */
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  /* Hilangkan efek bayangan pada kertas agar tinta tidak boros */
+  .shadow-sm, .shadow-md, .shadow-xl {
+    box-shadow: none !important;
+  }
+
+  /* Atur ukuran margin kertas PDF otomatis */
+  @page {
+    margin: 1.5cm;
+  }
 }
