@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "src/app/(dashboard)/detail/[id]/page.jsx", "src/app/(dashboard)/inventaris/page.jsx", "src/app/(dashboard)/persetujuan/page.jsx", "src/app/(dashboard)/rekap/page.jsx", "src/app/(dashboard)/sirkulasi/page.jsx", "src/app/(dashboard)/users/page.jsx", "src/app/(dashboard)/layout.jsx", "src/app/(dashboard)/page.jsx", "src/app/login/page.jsx", "src/lib/firebase.js"  ],
   "exclude": ["node_modules"]
 }
