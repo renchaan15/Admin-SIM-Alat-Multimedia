@@ -92,206 +92,338 @@ export default function KalenderPage() {
   };
 
   return (
-    <div className="space-y-6">
-      
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Kalender Sirkulasi</h2>
-          <p className="text-slate-500 text-sm mt-1">Pantau jadwal pengambilan dan pengembalian alat praktik.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <>
+      <style>{`
+        /* COMPONENT SPECIFIC STYLES - PIXEL GEAR TEMA */
+        .pg-page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 24px;
+        }
         
-        {/* BAGIAN KIRI: KALENDER INTERAKTIF */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          
-          {/* Navigasi Bulan */}
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <CalendarIcon className="w-6 h-6 text-emerald-500" />
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h3>
-            <div className="flex gap-2">
-              <button onClick={prevMonth} className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button onClick={() => setCurrentDate(new Date())} className="px-4 py-2 rounded-lg bg-emerald-50 text-emerald-600 font-semibold text-sm hover:bg-emerald-100 transition-colors">
-                Hari Ini
-              </button>
-              <button onClick={nextMonth} className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+        .pg-page-title h2 {
+          font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; color: #fff; margin: 0 0 4px 0; letter-spacing: -0.02em;
+        }
+        
+        .pg-page-title p {
+          font-family: 'Space Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.4); margin: 0; text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        /* LAYOUT GRID */
+        .pg-kalender-layout {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 24px;
+          align-items: start;
+        }
+
+        /* KOTAK KACA UMUM (GLASSMORPHISM) */
+        .pg-glass-card {
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 16px;
+          backdrop-filter: blur(10px);
+          overflow: hidden;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        /* BAGIAN KIRI: KALENDER */
+        .pg-cal-container {
+          padding: 24px;
+        }
+
+        .pg-cal-header {
+          display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+        }
+        .pg-cal-title {
+          font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px;
+        }
+        .pg-cal-nav {
+          display: flex; gap: 8px; align-items: center;
+        }
+        
+        .pg-btn-icon {
+          width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
+        }
+        .pg-btn-icon:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        
+        .pg-btn-today {
+          background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 0 16px; height: 36px; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .pg-btn-today:hover { background: rgba(16,185,129,0.2); border-color: #10b981; color: #fff; box-shadow: 0 0 15px rgba(16,185,129,0.1); }
+
+        .pg-cal-grid {
+          display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+        }
+        .pg-cal-dow {
+          text-align: center; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; padding-bottom: 12px;
+        }
+
+        .pg-cal-cell {
+          height: 100px; padding: 8px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; overflow: hidden; position: relative;
+        }
+        .pg-cal-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+        .pg-cal-cell:not(.empty):hover { border-color: rgba(16,185,129,0.3); background: rgba(255,255,255,0.02); }
+        .pg-cal-cell.selected { border-color: #10b981; background: rgba(16,185,129,0.1); box-shadow: inset 0 0 20px rgba(16,185,129,0.05); }
+
+        .pg-cell-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+        
+        .pg-date-num {
+          width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6);
+        }
+        .pg-date-num.today { background: #10b981; color: #020408; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+        .pg-cal-cell.selected .pg-date-num:not(.today) { color: #10b981; }
+
+        .pg-act-count {
+          font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;
+        }
+
+        .pg-cell-events {
+          flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; scrollbar-width: none;
+        }
+        .pg-cell-events::-webkit-scrollbar { display: none; }
+        
+        .pg-event-pill {
+          font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 600; padding: 4px 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 2px solid transparent;
+        }
+        .pg-event-ambil { background: rgba(59,130,246,0.1); color: #3b82f6; border-left-color: #3b82f6; }
+        .pg-event-kembali { background: rgba(239,68,68,0.1); color: #ef4444; border-left-color: #ef4444; }
+        .pg-event-berlangsung { background: rgba(16,185,129,0.1); color: #10b981; border-left-color: #10b981; }
+        
+        .pg-event-more { font-family: 'Space Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.3); padding-left: 4px; }
+
+        /* BAGIAN KANAN: PANEL DETAIL */
+        .pg-side-panel {
+          display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 120px);
+        }
+        .pg-side-header {
+          padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);
+        }
+        .pg-side-header p { font-family: 'Space Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0; }
+        .pg-side-header h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+
+        .pg-side-body {
+          padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;
+        }
+        .pg-side-body::-webkit-scrollbar { width: 4px; }
+        .pg-side-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .pg-tx-card {
+          background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; position: relative; overflow: hidden; transition: all 0.2s;
+        }
+        .pg-tx-card:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); }
+        
+        .pg-tx-ribbon {
+          position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        }
+        .pg-tx-ribbon.ambil { background: #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
+        .pg-tx-ribbon.kembali { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+        .pg-tx-ribbon.berlangsung { background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+
+        .pg-tx-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-left: 8px; }
+        .pg-tx-status {
+          display: flex; align-items: center; gap: 6px; font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px; border-radius: 6px;
+        }
+        .pg-tx-status.ambil { background: rgba(59,130,246,0.1); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
+        .pg-tx-status.kembali { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+        .pg-tx-status.berlangsung { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+
+        .pg-btn-detail-mini {
+          font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        }
+        .pg-btn-detail-mini:hover { background: rgba(16,185,129,0.1); color: #10b981; }
+
+        .pg-tx-info { display: flex; gap: 12px; padding-left: 8px; }
+        .pg-tx-avatar {
+          width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); flex-shrink: 0;
+        }
+        .pg-tx-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 2px 0; }
+        .pg-tx-kegiatan { font-family: 'Syne', sans-serif; font-size: 12px; color: rgba(255,255,255,0.5); margin: 0; }
+        
+        .pg-tx-alat {
+          display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.05); margin-left: 8px;
+        }
+        .pg-tx-alat p { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* EMPTY STATES */
+        .pg-state-panel {
+          background: transparent; border: 1px dashed rgba(255,255,255,0.1); border-radius: 16px; padding: 40px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 200px;
+        }
+        .pg-state-icon {
+          width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+        }
+        .pg-state-panel h4 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7); margin: 0 0 4px 0; }
+        .pg-state-panel p { font-family: 'Space Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.4); margin: 0; line-height: 1.5; }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+          .pg-kalender-layout { grid-template-columns: 1fr; }
+          .pg-side-panel { max-height: 500px; }
+        }
+        @media (max-width: 640px) {
+          .pg-cal-cell { height: 80px; padding: 4px; }
+          .pg-date-num { width: 20px; height: 20px; font-size: 10px; }
+          .pg-event-pill { font-size: 9px; padding: 2px 4px; }
+        }
+      `}</style>
+
+      <div>
+        {/* HEADER */}
+        <div className="pg-page-header">
+          <div className="pg-page-title">
+            <h2>Kalender Sirkulasi</h2>
+            <p>Pantau jadwal akuisisi dan restorasi logistik laboratorium</p>
           </div>
-
-          {/* Grid Kalender */}
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
-              <p className="text-slate-500 text-sm font-medium">Memuat data kalender...</p>
-            </div>
-          ) : (
-            <div>
-              {/* Nama Hari */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {dayNames.map(day => (
-                  <div key={day} className="text-center font-bold text-xs text-slate-400 uppercase tracking-wider py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Tanggal */}
-              <div className="grid grid-cols-7 gap-2">
-                {/* Ruang kosong untuk hari sebelum tanggal 1 */}
-                {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                  <div key={`empty-${i}`} className="h-24 rounded-xl bg-slate-50/50 border border-transparent"></div>
-                ))}
-
-                {/* Tanggal aktual */}
-                {Array.from({ length: daysInMonth }).map((_, index) => {
-                  const dateNum = index + 1;
-                  const loopDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dateNum);
-                  
-                  // Periksa apakah ini tanggal yang sedang diklik
-                  const isSelected = selectedDate.getDate() === dateNum && 
-                                     selectedDate.getMonth() === currentDate.getMonth() && 
-                                     selectedDate.getFullYear() === currentDate.getFullYear();
-                  
-                  // Periksa apakah ini hari ini
-                  const today = new Date();
-                  const isToday = dateNum === today.getDate() && 
-                                  currentDate.getMonth() === today.getMonth() && 
-                                  currentDate.getFullYear() === today.getFullYear();
-
-                  const dayTransactions = getTransactionsForDate(loopDate);
-
-                  return (
-                    <div 
-                      key={dateNum} 
-                      onClick={() => setSelectedDate(loopDate)}
-                      className={`h-24 p-2 rounded-xl border cursor-pointer transition-all flex flex-col ${
-                        isSelected 
-                          ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20 shadow-sm" 
-                          : "border-slate-100 hover:border-emerald-300 hover:shadow-sm"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-bold ${
-                          isToday ? "bg-emerald-500 text-white" : isSelected ? "text-emerald-700" : "text-slate-700"
-                        }`}>
-                          {dateNum}
-                        </span>
-                        
-                        {/* Indikator Total Kegiatan */}
-                        {dayTransactions.length > 0 && (
-                          <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                            {dayTransactions.length} act
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Baris Indikator Mini */}
-                      <div className="flex-1 overflow-y-auto space-y-1 mt-1 no-scrollbar">
-                        {dayTransactions.slice(0, 3).map((tx, i) => {
-                          const type = getActionType(tx, loopDate);
-                          return (
-                            <div key={i} className={`text-[9px] font-semibold px-1.5 py-0.5 rounded truncate ${
-                              type === "ambil" ? "bg-blue-100 text-blue-700" :
-                              type === "kembali" ? "bg-red-100 text-red-700" :
-                              "bg-emerald-100 text-emerald-700"
-                            }`}>
-                              {tx.nama_peminjam?.split(" ")[0]}
-                            </div>
-                          );
-                        })}
-                        {dayTransactions.length > 3 && (
-                          <div className="text-[9px] font-bold text-slate-400 pl-1">+{dayTransactions.length - 3} lainnya</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* BAGIAN KANAN: PANEL RINCIAN HARI INI */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full lg:max-h-[800px]">
-          <div className="p-6 border-b border-slate-100 bg-slate-50">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Jadwal pada tanggal</p>
-            <h3 className="text-xl font-bold text-slate-800">
-              {selectedDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </h3>
-          </div>
+        <div className="pg-kalender-layout">
+          
+          {/* ================= BAGIAN KIRI: KALENDER ================= */}
+          <div className="pg-glass-card pg-cal-container">
+            
+            <div className="pg-cal-header">
+              <h3 className="pg-cal-title">
+                <CalendarIcon size={24} color="#10b981" />
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </h3>
+              <div className="pg-cal-nav">
+                <button onClick={prevMonth} className="pg-btn-icon"><ChevronLeft size={18} /></button>
+                <button onClick={() => setCurrentDate(new Date())} className="pg-btn-today">Hari Ini</button>
+                <button onClick={nextMonth} className="pg-btn-icon"><ChevronRight size={18} /></button>
+              </div>
+            </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/30">
-            {selectedDayTransactions.length > 0 ? (
-              selectedDayTransactions.map(tx => {
-                const actType = getActionType(tx, selectedDate);
-                
-                return (
-                  <div key={tx.id_transaksi} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-colors">
-                    {/* Pita Garis Samping untuk visualisasi status */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                      actType === "ambil" ? "bg-blue-500" :
-                      actType === "kembali" ? "bg-red-500" : "bg-emerald-500"
-                    }`}></div>
+            {loading ? (
+              <div className="pg-state-panel" style={{ border: 'none', height: '400px' }}>
+                <Loader2 className="animate-spin" size={32} color="#10b981" style={{ marginBottom: 16 }} />
+                <p>Sinkronisasi Timeline...</p>
+              </div>
+            ) : (
+              <div>
+                <div className="pg-cal-grid">
+                  {dayNames.map(day => (
+                    <div key={day} className="pg-cal-dow">{day}</div>
+                  ))}
+                </div>
+
+                <div className="pg-cal-grid">
+                  {/* Sel Kosong */}
+                  {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                    <div key={`empty-${i}`} className="pg-cal-cell empty"></div>
+                  ))}
+
+                  {/* Sel Tanggal */}
+                  {Array.from({ length: daysInMonth }).map((_, index) => {
+                    const dateNum = index + 1;
+                    const loopDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dateNum);
                     
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-2">
-                        {actType === "ambil" ? <ArrowRightCircle className="w-4 h-4 text-blue-500" /> :
-                         actType === "kembali" ? <ArrowLeftCircle className="w-4 h-4 text-red-500" /> :
-                         <Clock className="w-4 h-4 text-emerald-500" />}
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                          actType === "ambil" ? "bg-blue-50 text-blue-700" :
-                          actType === "kembali" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
-                        }`}>
-                          {actType === "ambil" ? "Jadwal Ambil" : actType === "kembali" ? "Batas Kembali" : "Sedang Dipinjam"}
-                        </span>
-                      </div>
-                      <Link href={`/detail/${tx.id_transaksi}`}>
-                        <button className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-50 px-2 py-1 rounded transition-colors">
-                          Detail
-                        </button>
-                      </Link>
-                    </div>
+                    const isSelected = selectedDate.getDate() === dateNum && 
+                                       selectedDate.getMonth() === currentDate.getMonth() && 
+                                       selectedDate.getFullYear() === currentDate.getFullYear();
+                    
+                    const today = new Date();
+                    const isToday = dateNum === today.getDate() && 
+                                    currentDate.getMonth() === today.getMonth() && 
+                                    currentDate.getFullYear() === today.getFullYear();
 
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-1">
-                        <User className="w-5 h-5 text-slate-500" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800 text-sm leading-tight">{tx.nama_peminjam}</p>
-                        <p className="text-xs font-medium text-slate-500 mt-0.5">{tx.kegiatan}</p>
-                        
-                        <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100">
-                          <Package className="w-3.5 h-3.5 text-slate-400" />
-                          <p className="text-xs font-semibold text-slate-700 truncate">{tx.nama_alat}</p>
+                    const dayTransactions = getTransactionsForDate(loopDate);
+
+                    return (
+                      <div 
+                        key={dateNum} 
+                        onClick={() => setSelectedDate(loopDate)}
+                        className={`pg-cal-cell ${isSelected ? 'selected' : ''}`}
+                      >
+                        <div className="pg-cell-top">
+                          <span className={`pg-date-num ${isToday ? 'today' : ''}`}>
+                            {dateNum}
+                          </span>
+                          {dayTransactions.length > 0 && (
+                            <span className="pg-act-count">{dayTransactions.length}</span>
+                          )}
+                        </div>
+
+                        <div className="pg-cell-events">
+                          {dayTransactions.slice(0, 3).map((tx, i) => {
+                            const type = getActionType(tx, loopDate);
+                            return (
+                              <div key={i} className={`pg-event-pill pg-event-${type}`}>
+                                {tx.nama_peminjam?.split(" ")[0] || "Siswa"}
+                              </div>
+                            );
+                          })}
+                          {dayTransactions.length > 3 && (
+                            <div className="pg-event-more">+{dayTransactions.length - 3} log</div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                  <CalendarIcon className="w-8 h-8 text-slate-300" />
+                    );
+                  })}
                 </div>
-                <h4 className="text-sm font-bold text-slate-700">Tidak Ada Kegiatan</h4>
-                <p className="text-xs text-slate-500 mt-1 max-w-[200px]">
-                  Tidak ada jadwal pengambilan atau pengembalian alat pada tanggal ini.
-                </p>
               </div>
             )}
           </div>
-        </div>
 
+          {/* ================= BAGIAN KANAN: PANEL DETAIL ================= */}
+          <div className="pg-glass-card pg-side-panel">
+            <div className="pg-side-header">
+              <p>Jadwal Protokol pada Tanggal</p>
+              <h3>{selectedDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3>
+            </div>
+
+            <div className="pg-side-body">
+              {selectedDayTransactions.length > 0 ? (
+                selectedDayTransactions.map(tx => {
+                  const actType = getActionType(tx, selectedDate);
+                  
+                  return (
+                    <div key={tx.id_transaksi} className="pg-tx-card">
+                      <div className={`pg-tx-ribbon ${actType}`}></div>
+                      
+                      <div className="pg-tx-top">
+                        <div className={`pg-tx-status ${actType}`}>
+                          {actType === "ambil" ? <ArrowRightCircle size={12} /> :
+                           actType === "kembali" ? <ArrowLeftCircle size={12} /> :
+                           <Clock size={12} />}
+                          {actType === "ambil" ? "Jadwal Ambil" : actType === "kembali" ? "Batas Kembali" : "Sedang Dipinjam"}
+                        </div>
+                        <Link href={`/detail/${tx.id_transaksi}`} style={{ textDecoration: 'none' }}>
+                          <button className="pg-btn-detail-mini">DETAIL</button>
+                        </Link>
+                      </div>
+
+                      <div className="pg-tx-info">
+                        <div className="pg-tx-avatar">
+                          <User size={18} />
+                        </div>
+                        <div>
+                          <h4 className="pg-tx-name">{tx.nama_peminjam || "Unknown"}</h4>
+                          <p className="pg-tx-kegiatan">{tx.kegiatan || "-"}</p>
+                        </div>
+                      </div>
+
+                      <div className="pg-tx-alat">
+                        <Package size={14} color="rgba(255,255,255,0.3)" />
+                        <p>{tx.nama_alat || "Hardware Modul"}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="pg-state-panel">
+                  <div className="pg-state-icon">
+                    <CalendarIcon size={24} />
+                  </div>
+                  <h4>Sektor Waktu Kosong</h4>
+                  <p>Tidak ada logistik masuk atau keluar pada koordinat tanggal ini.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
       </div>
-    </div>
+    </>
   );
 }

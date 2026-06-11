@@ -1,24 +1,32 @@
-// src/app/(dashboard)/layout.js
+// src/app/(dashboard)/layout.jsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, ListChecks, RefreshCcw, PackageSearch,
-  LogOut, Bell, Search, MonitorPlay, Users, BarChart3, Loader2
+  LogOut, Bell, Search, MonitorPlay, Users, BarChart3, Loader2,
+  Calendar, AlertTriangle, Clock, X
 } from "lucide-react";
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
+  const dropdownRef = useRef(null);
 
+  // State Keamanan & Profil Dinamis
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [profile, setProfile] = useState({ nama: "Pengelola", role: "Laboran" });
 
+  // State Notifikasi Real-Time
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+
+  // ================= AUTH GUARD ROLE & PROFILE DINAMIS =================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -61,6 +69,69 @@ export default function DashboardLayout({ children }) {
     return () => unsubscribe();
   }, [router]);
 
+  // ================= REAL-TIME NOTIFICATION SYSTEM =================
+  useEffect(() => {
+    const txRef = collection(db, "transactions");
+    
+    const unsubscribe = onSnapshot(txRef, (snapshot) => {
+      const activeNotifications = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        
+        // 1. Notifikasi jika ada antrean baru yang butuh ACC
+        if (data.status_pinjam === "menunggu_acc") {
+          activeNotifications.push({
+            id: doc.id,
+            tipe: "persetujuan",
+            judul: "Pengajuan Alat Baru",
+            deskripsi: `${data.nama_peminjam} meminta ACC untuk ${data.nama_alat}`,
+            link: "/persetujuan",
+            icon: Clock,
+            accent: "#f59e0b",
+            bg: "rgba(245, 158, 11, 0.1)"
+          });
+        }
+
+        // 2. Notifikasi jika ada pengembalian yang terlambat
+        if (data.status_pinjam === "aktif_dipinjam" && data.tgl_kembali) {
+          const tglKembali = data.tgl_kembali.toDate();
+          tglKembali.setHours(0, 0, 0, 0);
+          
+          if (today > tglKembali) {
+            activeNotifications.push({
+              id: doc.id,
+              tipe: "terlambat",
+              judul: "Peringatan Terlambat!",
+              deskripsi: `${data.nama_peminjam} melewati batas kembali ${data.nama_alat}`,
+              link: "/sirkulasi",
+              icon: AlertTriangle,
+              accent: "#ef4444",
+              bg: "rgba(239, 68, 68, 0.1)"
+            });
+          }
+        }
+      });
+
+      setNotifications(activeNotifications);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Menutup dropdown jika klik di luar area komponen
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowNotifDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleLogout = async () => {
     if (window.confirm("Apakah Anda yakin ingin keluar dari panel admin?")) {
       await signOut(auth);
@@ -70,12 +141,12 @@ export default function DashboardLayout({ children }) {
 
   const menuItems = [
     { name: "Overview", icon: LayoutDashboard, path: "/", accent: "#10b981", glow: "rgba(16,185,129,0.35)", label: "01" },
-    { name: "Jadwal Kalender", icon: Calendar, path: "/kalender", color: "text-orange-500 bg-orange-50" },
-    { name: "ACC Massal", icon: ListChecks, path: "/persetujuan", accent: "#f59e0b", glow: "rgba(245,158,11,0.35)", label: "02" },
-    { name: "Sirkulasi & Riwayat", icon: RefreshCcw, path: "/sirkulasi", accent: "#a855f7", glow: "rgba(168,85,247,0.35)", label: "03" },
-    { name: "Manajemen Alat", icon: PackageSearch, path: "/inventaris", accent: "#06b6d4", glow: "rgba(6,182,212,0.35)", label: "04" },
-    { name: "Manajemen User", icon: Users, path: "/users", accent: "#ec4899", glow: "rgba(236,72,153,0.35)", label: "05" },
-    { name: "Rekap Laporan", icon: BarChart3, path: "/rekap", accent: "#6366f1", glow: "rgba(99,102,241,0.35)", label: "06" },
+    { name: "Jadwal Kalender", icon: Calendar, path: "/kalender", accent: "#f97316", glow: "rgba(249,115,22,0.35)", label: "02" },
+    { name: "ACC Massal", icon: ListChecks, path: "/persetujuan", accent: "#f59e0b", glow: "rgba(245,158,11,0.35)", label: "03" },
+    { name: "Sirkulasi & Riwayat", icon: RefreshCcw, path: "/sirkulasi", accent: "#a855f7", glow: "rgba(168,85,247,0.35)", label: "04" },
+    { name: "Manajemen Alat", icon: PackageSearch, path: "/inventaris", accent: "#06b6d4", glow: "rgba(6,182,212,0.35)", label: "05" },
+    { name: "Manajemen User", icon: Users, path: "/users", accent: "#ec4899", glow: "rgba(236,72,153,0.35)", label: "06" },
+    { name: "Rekap Laporan", icon: BarChart3, path: "/rekap", accent: "#6366f1", glow: "rgba(99,102,241,0.35)", label: "07" },
   ];
 
   const getInitials = (name) => {
@@ -528,6 +599,124 @@ export default function DashboardLayout({ children }) {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
           background-size: 200px 200px;
         }
+
+        /* ===== NOTIFICATION DROPDOWN ===== */
+        .pg-notif-container {
+          position: relative;
+        }
+        .pg-notif-dropdown {
+          position: absolute;
+          right: 0;
+          margin-top: 12px;
+          width: 320px;
+          background: rgba(8, 12, 20, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.05);
+          backdrop-filter: blur(20px);
+          overflow: hidden;
+          z-index: 50;
+          animation: pg-fade-in 0.2s ease;
+        }
+        @keyframes pg-fade-in {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .pg-notif-header {
+          padding: 16px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgba(255, 255, 255, 0.02);
+        }
+        .pg-notif-header-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .pg-notif-badge {
+          font-family: 'Space Mono', monospace;
+          font-size: 9px;
+          background: #ef4444;
+          color: #fff;
+          padding: 1px 6px;
+          border-radius: 20px;
+          font-weight: 700;
+        }
+        .pg-notif-close {
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.4);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          border-radius: 6px;
+          transition: all 0.15s;
+        }
+        .pg-notif-close:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+        }
+        .pg-notif-list {
+          max-height: 280px;
+          overflow-y: auto;
+        }
+        .pg-notif-list::-webkit-scrollbar { width: 4px; }
+        .pg-notif-list::-webkit-scrollbar-track { background: transparent; }
+        .pg-notif-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .pg-notif-item {
+          display: flex;
+          gap: 12px;
+          padding: 14px 20px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          text-decoration: none;
+          transition: background 0.15s;
+          cursor: pointer;
+        }
+        .pg-notif-item:hover {
+          background: rgba(255, 255, 255, 0.02);
+        }
+        .pg-notif-item:last-child {
+          border-bottom: none;
+        }
+        .pg-notif-item-icon {
+          width: 32px; height: 32px;
+          border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .pg-notif-item-content {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .pg-notif-item-title {
+          font-size: 12px;
+          font-weight: 700;
+          color: #fff;
+        }
+        .pg-notif-item-desc {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.45);
+          line-height: 1.4;
+        }
+        .pg-notif-empty {
+          padding: 32px 20px;
+          text-align: center;
+          color: rgba(255, 255, 255, 0.3);
+          font-size: 11px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
       `}</style>
 
       <div className="pg-root">
@@ -615,10 +804,66 @@ export default function DashboardLayout({ children }) {
             </div>
 
             <div className="pg-header-right">
-              <button className="pg-notif-btn">
-                <Bell size={16} />
-                <span className="pg-notif-dot"></span>
-              </button>
+              {/* NOTIFICATION HUB */}
+              <div className="pg-notif-container" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                  className="pg-notif-btn"
+                  style={showNotifDropdown ? { background: "rgba(255,255,255,0.08)", color: "#fff", borderColor: "rgba(255,255,255,0.15)" } : {}}
+                >
+                  <Bell size={16} />
+                  {notifications.length > 0 && (
+                    <span className="pg-notif-dot animate-pulse"></span>
+                  )}
+                </button>
+
+                {showNotifDropdown && (
+                  <div className="pg-notif-dropdown">
+                    <div className="pg-notif-header">
+                      <span className="pg-notif-header-title">
+                        Pusat Notifikasi
+                        {notifications.length > 0 && (
+                          <span className="pg-notif-badge">
+                            {notifications.length}
+                          </span>
+                        )}
+                      </span>
+                      <button onClick={() => setShowNotifDropdown(false)} className="pg-notif-close">
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div className="pg-notif-list">
+                      {notifications.length > 0 ? (
+                        notifications.map((notif) => {
+                          const NotifIcon = notif.icon;
+                          return (
+                            <Link
+                              key={notif.id}
+                              href={notif.link}
+                              className="pg-notif-item"
+                              onClick={() => setShowNotifDropdown(false)}
+                            >
+                              <div className="pg-notif-item-icon" style={{ background: notif.bg, color: notif.accent }}>
+                                <NotifIcon size={14} />
+                              </div>
+                              <div className="pg-notif-item-content">
+                                <span className="pg-notif-item-title">{notif.judul}</span>
+                                <span className="pg-notif-item-desc">{notif.deskripsi}</span>
+                              </div>
+                            </Link>
+                          );
+                        })
+                      ) : (
+                        <div className="pg-notif-empty">
+                          <Bell size={24} style={{ opacity: 0.3, marginBottom: 4 }} />
+                          <span>Semua aman! Tidak ada notifikasi baru.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="pg-divider-v"></div>
 
