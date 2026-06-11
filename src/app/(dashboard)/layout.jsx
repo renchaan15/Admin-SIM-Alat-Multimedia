@@ -70,6 +70,7 @@ export default function DashboardLayout({ children }) {
 
   const menuItems = [
     { name: "Overview", icon: LayoutDashboard, path: "/", accent: "#10b981", glow: "rgba(16,185,129,0.35)", label: "01" },
+    { name: "Jadwal Kalender", icon: Calendar, path: "/kalender", color: "text-orange-500 bg-orange-50" },
     { name: "ACC Massal", icon: ListChecks, path: "/persetujuan", accent: "#f59e0b", glow: "rgba(245,158,11,0.35)", label: "02" },
     { name: "Sirkulasi & Riwayat", icon: RefreshCcw, path: "/sirkulasi", accent: "#a855f7", glow: "rgba(168,85,247,0.35)", label: "03" },
     { name: "Manajemen Alat", icon: PackageSearch, path: "/inventaris", accent: "#06b6d4", glow: "rgba(6,182,212,0.35)", label: "04" },
