@@ -26,8 +26,7 @@ export default function PersetujuanPage() {
 
   // ================= FIREBASE LISTENER =================
   useEffect(() => {
-    // UBAH: Kueri sekarang hanya menarik data yang sudah di-ACC oleh Guru
-    const q = query(collection(db, "transactions"), where("status_pinjam", "==", "menunggu_acc_laboran"));
+    const q = query(collection(db, "transactions"), where("status_pinjam", "==", "menunggu_acc"));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedTx = snapshot.docs.map(doc => ({
@@ -65,7 +64,7 @@ export default function PersetujuanPage() {
 
   // ================= LOGIKA ACC MASSAL =================
   const handleAccSemua = async (grup) => {
-    const confirm = window.confirm(`Setujui peminjaman untuk ${grup.nama_peminjam} sebagai tahap akhir?`);
+    const confirm = window.confirm(`Setujui semua peminjaman untuk ${grup.nama_peminjam}?`);
     if (!confirm) return;
 
     setIsProcessing(true);
@@ -74,7 +73,6 @@ export default function PersetujuanPage() {
       
       grup.items.forEach(item => {
         const txRef = doc(db, "transactions", item.id_transaksi);
-        // Saat Laboran menekan ACC, status finalnya berubah menjadi disetujui (siap diambil)
         batch.update(txRef, {
           status_pinjam: "disetujui",
           updated_at: serverTimestamp()
@@ -418,8 +416,8 @@ export default function PersetujuanPage() {
         {/* HEADER SECTION */}
         <div className="pg-page-header">
           <div className="pg-page-title">
-            <h2>Antrean Persetujuan Laboran</h2>
-            <p>Tinjau verifikasi tahap akhir untuk pengajuan alat yang telah di-ACC Guru</p>
+            <h2>Antrean Persetujuan</h2>
+            <p>Tinjau dan verifikasi keranjang pengajuan alat dari siswa</p>
           </div>
         </div>
 
@@ -504,7 +502,7 @@ export default function PersetujuanPage() {
                           className="pg-btn-acc"
                         >
                           {isProcessing ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
-                          Otorisasi Akhir (ACC Semua)
+                          Otorisasi (ACC Semua)
                         </button>
                       </div>
                     </div>
@@ -519,7 +517,7 @@ export default function PersetujuanPage() {
                 <CheckCircle size={32} />
               </div>
               <h3>Antrean Bersih</h3>
-              <p>Tidak ada pengajuan alat (yang telah di-ACC Guru) yang menunggu verifikasi Anda saat ini.</p>
+              <p>Tidak ada pengajuan alat baru yang menunggu verifikasi.</p>
             </div>
           )}
         </div>
